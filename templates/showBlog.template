@@ -1,0 +1,21 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<link type="text/css" rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+{{ template "menu" }}
+<p>
+<blog>
+  <blog_title>{{ .Title}}</blog_title>
+  by <blogger> {{ .Blogger }}</blogger>
+<blog_text>{{ .Text }}</blog_text>
+<blog_signature>{{ .Signature }}</blog_signature>
+<blog_validation>Here will be the output of the signature validation</blog_validation>
+</blog>
+</p>
+<h3>Comments</h3>
+<p>Here you can create your comments. You can respond anoynmous or use one of your eccentric identities (digital pseudonyms).[expect button soon]</p>
+{{ template "tracking" }}
+</body></html>

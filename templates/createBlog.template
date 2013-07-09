@@ -1,0 +1,19 @@
+<html>
+<head>
+<link type="text/css" rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+{{ template "menu" }}
+<h1>Write your new blog</h1>
+<p>Hello {{ .CN }}. Here you can write your new blog entry</p>
+<form method="POST">
+<input type="hidden" name="sign" value="required">
+<!-- <input type="hidden" name="certificate_url" value="{{ .IdURL }}"> -->
+<label>Title: </label><input type="text" size="50" name="title">
+<br>
+<textarea name="cleartext" rows="20" cols="80">It was a sunny day when ... </textarea><br>
+<input type="submit" name="submit" value="Post my Blog">
+<input type="hidden" name="signature">
+</form>
+{{ template "tracking" }}
+</body></html>

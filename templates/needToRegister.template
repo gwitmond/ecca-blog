@@ -1,0 +1,50 @@
+<html>
+<head>
+<link type="text/css" rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+{{ template "menu" }}
+
+<h1>Don't panic :)</h1>
+
+<p>You need a client certificate to create a profile or read and write messages.<p>
+
+<p>There are three ways to sign up:</p>
+
+<h3>With a User Agent<h/3>
+
+<p>For the best experience, please install the <a href="https://github.com/gwitmond/ecca-proxy">ecca-proxy</a>. 
+This proxy is designed to do all the hard work and makes using client certificates a breeze on any site that accepts Eccentric Authentication.</p>
+
+<p>Regrettably, you need to be a Software Adventurer to install and run it.</p>
+
+<p>We envision that this user agent will be built into every computer and web browser soon.</p>
+
+<h3>Semi automatically</h3>
+
+<p>If you use the Firefox browser you can register at the <a href="https://register-dating.wtmnd.nl:10444/signup-genkey.html">Certificate Server</a>.</p>
+<p>With the certificate you can log in into the site but you won't be able to send encrypted messages. 
+To protect your privacy, we delete all messages you send that are not encrypted. 
+Although you can receive encrypted messages, you'll have a nice puzzle to decode it. 
+The User Agent above takes care of all that.
+
+<h3>Manually</h3>
+
+<p>Even with other browsers you can log in. But be warned, the process is not for the faint-of-hearts. 
+You'll need to run the </em>openssl</em> command with lots of arcane options. Twice.</p>
+
+<p>You can register at the <a href="https://register-dating.wtmnd.nl:10444/signup.html">Certificate Server</a>. It has the instructions on what to do and how to get that certificate into your browser</p>
+
+<p>It has the same drawbacks as the semi-automatic sign up procedure. You can only log in, no secure messaging for you.</p>
+
+
+<h3>Background</h3>
+
+
+<p>For more background reading: <a href="https://witmond.nl/blog/2012/10/22/announcing-eccentric-authentication.html">iAnnouncing Eccentric Authentication</a> and the other articles.</p>
+
+<p>With regards, Guido Witmond.</p>
+<p>Feel free to mail: info @ witmond.nl.</p>
+<hr />
+</body>
+</html>

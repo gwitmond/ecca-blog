@@ -1,0 +1,20 @@
+<html>
+<head>
+<link type="text/css" rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+{{ template "menu" }}
+<h1>Here are our blogs</h1>
+<p>These are our blogs<p>
+<p>Click on the Bloggers name to read the blog and leave a comment</p>
+<table>
+<tr><th>Blogger<th><th>Blog</th></tr>
+{{ range $_, $blog := .blogs }}
+<tr><td><a href="/blog/{{ $blog.Id }}">{{ $blog.Blogger }}</a><td><td>{{ $blog.Title }}</td></tr>
+{{ else }}<tr><td colspan="2">There are no bloggers. Be the first. Sign up below.</td></tr>
+{{ end }}
+</table>
+<h3>Create your own blog</h3>
+<p>Here you can create your own blog. Click here: <a href="/createblog">Create blog</a>. Just create your username at the Eccentric Authenticator. It will be yours from now on.
+{{ template "tracking" }}
+</body></html>
