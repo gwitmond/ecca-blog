@@ -32,8 +32,7 @@ func DatastoreOpen(storename string) (*Datastore) {
         check(err)
  	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
 	// set key to be unique. We can't allow multiple Id's anyway.
-	// false -> no autogenerate of key.
-        dbmap.AddTableWithName(Blog{}, "blogs").SetKeys(false, "Id")
+        dbmap.AddTableWithName(Blog{}, "blogs").SetKeys(true, "Id")
 	dbmap.CreateTables() // if not exists
         // dbmap.TraceOn("[gorp]", log.New(os.Stdout, "eccaCA:", log.Lmicroseconds)) 
 	return &Datastore{
