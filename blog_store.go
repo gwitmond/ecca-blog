@@ -33,7 +33,8 @@ func DatastoreOpen(storename string) (*Datastore) {
  	dbmap := &gorp.DbMap{Db: db, Dialect: gorp.SqliteDialect{}}
 	// set key to be unique. We can't allow multiple Id's anyway.
         dbmap.AddTableWithName(Blog{}, "blogs").SetKeys(true, "Id")
-	dbmap.CreateTables() // if not exists
+        dbmap.AddTableWithName(Comment{}, "comments").SetKeys(true, "Id")
+	dbmap.CreateTablesIfNotExists()
         // dbmap.TraceOn("[gorp]", log.New(os.Stdout, "eccaCA:", log.Lmicroseconds)) 
 	return &Datastore{
 		Storename: storename,
@@ -41,6 +42,9 @@ func DatastoreOpen(storename string) (*Datastore) {
 	}
 }
 
+func (ds *Datastore) write(items... interface{}) error {
+	return ds.dbmap.Insert(items)
+}
 
 func (ds *Datastore) writeBlog(blog *Blog) {
 	check(ds.dbmap.Insert(blog))
@@ -64,6 +68,13 @@ func (ds *Datastore) getBlogs() (blogs []*Blog) {
 	_, err := ds.dbmap.Select(&blogs, "SELECT * FROM blogs")
 	check(err)
 	return // blogs
+}
+
+// Get the comments for the blog
+func (ds *Datastore) getComments(blogId int) (comments []*Comment) {
+	_, err := ds.dbmap.Select(&comments, "SELECT * FROM comments WHERE blogId = ? ORDER BY id", blogId)
+	check(err)
+	return // comments
 }
 
 

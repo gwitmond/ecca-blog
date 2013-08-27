@@ -12,12 +12,12 @@ package main
 import (
 	"log"
 	"net/http"
-//	"net/url"
-//	"os"
 	"crypto/tls"
 	"html/template"
 	"flag"
 	"regexp"
+	"strconv"
+	"fmt"
 	"github.com/gwitmond/eccentric-authentication" // package eccentric
 )
 
@@ -32,6 +32,16 @@ type Blog struct {
 	Signature string // with openssl signing, it's best a string, with x509, it would be []byte...
 }
 
+// Comment struct contains the comment entries
+type Comment struct {
+	Id          int        // auto increment id
+	BlogId  int     // the blog that it's a comment to.
+	Blogger string  // the CN of the bloggers' certificate
+	Date     string
+	Title      string
+	Text      string
+	Signature string // with openssl signing, it's best a string, with x509, it would be []byte...
+}
 
 // global state
 var ds *Datastore
@@ -49,19 +59,29 @@ var templates = template.Must(template.ParseFiles(
 	"templates/tracking.template")) 
 
 
-func init() {
-	http.HandleFunc("/", homePage)
+func initServeMux(mux *http.ServeMux) *http.ServeMux {
+	mux.HandleFunc("/", homePage)
 
-	http.HandleFunc("/blogs", showBlogs) // show list of blogs
-	http.Handle("/createblog", ecca.LoggedInHandler(createBlog, "needToRegister.template"))
-	http.HandleFunc("/blog/", showBlog) // show a single blog/<id>  (for everyone)
+	mux.HandleFunc("/blogs", showBlogs) // show list of blogs
+	mux.Handle("/createblog", ecca.LoggedInHandler(createBlog, "needToRegister.template"))
+	mux.HandleFunc("/blog/", showBlog) // show a single blog/<id>  (for everyone)
 
-	//http.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
-	//http.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
+	mux.HandleFunc("/submit-comment/", submitComment)   // (optionally signed)
 
-	http.Handle("/static/", http.FileServer(http.Dir(".")))
+	//mux.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
+	//mux.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
+
+	mux.Handle("/static/", http.FileServer(http.Dir(".")))
+	return mux
 }
 
+type BlogHandler struct {
+	mux *http.ServeMux
+}
+
+func (bh *BlogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	bh.mux.ServeHTTP(w, req)
+}
 
 func main() {
 	// The things to set before running.
@@ -92,8 +112,14 @@ func main() {
 	pool := eccentric.ReadCert( *certDir + "/" + *fpcaCert) // "datingLocalCA.cert.pem"
 	ds = DatastoreOpen("cryptoblog.sqlite3")
 	log.Printf("Started at %s. Go to https://%s/ + port", *bindAddress, *hostname)
-	
-	server := &http.Server{Addr: *bindAddress,
+
+	bloghandler := &BlogHandler{
+		mux: initServeMux(http.NewServeMux()),
+	}
+
+	server := &http.Server{
+		Addr: *bindAddress,
+		Handler: bloghandler,
 		TLSConfig: &tls.Config{
 			ClientCAs: pool,
 			ClientAuth: tls.VerifyClientCertIfGiven},
@@ -132,9 +158,12 @@ func showBlog(w http.ResponseWriter, req *http.Request) {
 		http.NotFound(w, req)
 		return
 	}
+	comments := ds.getComments(blog.Id)
 	w.Header().Set("Eccentric-Authentication", "verify")
 	w.Header().Set("Content-Type", "text/html, charset=utf8")
- 	check(templates.ExecuteTemplate(w, "showBlog.template", blog))
+ 	check(templates.ExecuteTemplate(w, "showBlog.template", map[string]interface{}{
+		"Blog": blog,
+		"Comments": comments}))
 }
 
 // createBlog lets the user creata a blog
@@ -150,22 +179,54 @@ func createBlog(w http.ResponseWriter, req *http.Request) {
  	case "POST":
  		req.ParseForm()
 		// TODO: Verify signature before storing.
-		blog := Blog{
+		blog := &Blog{
 			Blogger: cn,
 			Title: req.Form.Get("title"),
 			Text: req.Form.Get("cleartext"),
 			Signature: req.Form.Get("signature"),
 		}
-		ds.writeBlog(&blog)
-		//check(err)	 
-		//TODO: make a nice template with a menu and a redirect-link.
- 		w.Write([]byte(`<html><p>Thank you for your entry. <a href="/blogs">Show all blogs.</a></p></html>`))
+		ds.writeBlog(blog) // sets blog.Id
+		http.Redirect(w, req, fmt.Sprintf("/blog/%v", blog.Id), http.StatusTemporaryRedirect  )
 
  	default: 
  		http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
  	}
- }
+}
 
+// submitComment lets the user add a comment
+// it can be signed or unsigned
+func submitComment(w http.ResponseWriter, req *http.Request) {
+	switch req.Method {
+ 	case "POST":
+ 		req.ParseForm()
+		// check if our user is logged in with a correct certificate
+		// otherwise, we call him "anonymous"
+		cn, _ := checkUserIsLoggedIn(req)
+		blogId, err := strconv.Atoi(req.Form.Get("blogId"))
+		check(err)
+		// TODO: Verify signature before storing.
+		comment := &Comment{
+			BlogId: blogId,
+			Blogger: cn,
+			Title: req.Form.Get("title"),
+			Text: req.Form.Get("cleartext"),
+			Signature: req.Form.Get("signature"),
+		}
+		check(ds.write(comment))
+		http.Redirect(w, req, fmt.Sprintf("/blog/%v", blogId), 302)
+
+ 	default: 
+ 		http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
+ 	}
+}
+
+// breaks if there is an error
+func checkUserIsLoggedIn(req *http.Request) (string, bool) {
+	if len(req.TLS.PeerCertificates) == 0 {
+		return "anonymous", false
+	}
+	return req.TLS.PeerCertificates[0].Subject.CommonName, true
+}
 
 
 	

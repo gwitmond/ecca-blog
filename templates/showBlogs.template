@@ -5,7 +5,7 @@
 <body>
 {{ template "menu" }}
 <h1>Here are our blogs</h1>
-<p>These are our blogs<p>
+<p>These are our blogs</p>
 <p>Click on the Bloggers name to read the blog and leave a comment</p>
 <table>
 <tr><th>Blogger<th><th>Blog</th></tr>

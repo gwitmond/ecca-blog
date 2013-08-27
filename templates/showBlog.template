@@ -2,20 +2,40 @@
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
-<link type="text/css" rel="stylesheet" href="/static/style.css"/>
+<link type="text/css" rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
 {{ template "menu" }}
 <p>
 <blog>
-  <blog_title>{{ .Title}}</blog_title>
-  by <blogger> {{ .Blogger }}</blogger>
-<blog_text>{{ .Text }}</blog_text>
-<blog_signature>{{ .Signature }}</blog_signature>
-<blog_validation>Here will be the output of the signature validation</blog_validation>
+  <blog_title>{{ .Blog.Title}}</blog_title>
+  by <blogger> {{ .Blog.Blogger }}</blogger>
+  <blog_text><pre>{{ .Blog.Text }}</pre></blog_text>
+ <blog_signature>{{ .Blog.Signature }}</blog_signature>
+ <blog_validation>Here will be the output of the signature validation</blog_validation>
 </blog>
 </p>
 <h3>Comments</h3>
-<p>Here you can create your comments. You can respond anoynmous or use one of your eccentric identities (digital pseudonyms).[expect button soon]</p>
+{{ range $_, $comment := .Comments }}
+  <blog>
+    <blog_title>{{ $comment.Title }}</blog_title>
+    <blogger>{{ $comment.Blogger }}</blogger>
+    <blog_text><pre>{{ $comment.Text }}</pre></blog_text>
+    <blog_signature>{{ $comment.Signature }}</blog_signature>
+    <blog_validation>Here will be the output of the signature validation</blog_validation>
+  </blog>
+{{ else }}<p>There are no comments. Be the first. Sign up or write anonymous.</p>
+{{ end }}
+<p>Here you can create your comments. You can respond anoynmous or use one of your eccentric identities (digital pseudonyms).</p>
+<form method="POST" action="/submit-comment">
+  <input type="hidden" name="sign" value="optional" />
+  <!-- <input type="hidden" name="certificate_url" value="{{ .IdURL }}" /> -->
+  <label>Title: </label><input type="text" size="50" name="title" />
+  <br />
+  <textarea name="cleartext" rows="10" cols="80">TL;DR It was cloudy, you nitwit </textarea><br />
+  <input type="submit" name="submit" value="Post my deep thoughts" />
+  <input type="hidden" name="signature" />
+  <input type="hidden" name="blogId" value="{{ .blog.Id }}" />
+</form>
 {{ template "tracking" }}
 </body></html>
