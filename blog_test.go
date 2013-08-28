@@ -29,6 +29,7 @@ import (
 
 	"net/url"
 	"net/http"
+	"net/http/httputil"
 	"net/http/httptest"
 	"log"
 	"errors"
@@ -315,16 +316,51 @@ func TestSignVerifyBlog(t *testing.T) {
 //****************** Comments **********************************//
 
 func TestSubmitRetrieveComment(t *testing.T) { 
+	// create a new blog to attach the comments to.
+	regclient := regClient()
+	
+	create, err := url.Parse(https.URL)
+	check(err)
+	create.Path="/createblog" // this one requires log in
+
+	form :=  url.Values{
+		"cn": {"TestBlogger"},
+		"title": {"A Title"},
+		"cleartext": {"The message"},
+		"signature": {"Ignore this signature."}}
+	resp, err := regclient.PostForm(create.String(), form)
+	if err != nil { t.Fatal(err)	}
+	defer resp.Body.Close()
+	
+	t.Logf("page is: %#v\n", resp)
+	t.Logf("headers : %#v\n", resp.Header)
+	if resp.StatusCode != 307 {
+			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
+	}
+		
+	// get  redirect to Header[Location] expect /blog/<id>#<commentId>
+	bloglocation := resp.Header.Get("Location")
+	blogUrl, err := url.Parse(bloglocation)
+	check(err)
+	blogId := getFirst(blogRE.FindStringSubmatch(blogUrl.Path))
+	t.Logf("Posted blog at %v", bloglocation)
+
+	// Submit a comment, anonymous
 	anonclient := anonClient()
-	//regclient := regClient()
 
 	submit, err := url.Parse(https.URL)
 	check(err)
 	submit.Path="/submit-comment" // optional log in. We do both
 
 	submitRetrieveComment := func(comment Comment) bool {
+		// Sanitise input
+		comment.Blogger = srand(len(comment.Blogger))
+		comment.Title = srand(len(comment.Title))
+		comment.Text = srand(len(comment.Text))
+		comment.Signature = srand(len(comment.Signature))
+
 		form :=  url.Values{
-			"blogId": {"1"},
+			"blogId": {blogId},
 			"title": {comment.Title},
 			"cleartext": {comment.Text},
 			"signature": {comment.Signature}}
@@ -342,11 +378,16 @@ func TestSubmitRetrieveComment(t *testing.T) {
 		}
 		
 		// redirect to Header[Location]
-		location := resp.Header.Get("Location")
-		t.Logf("Redirect to %v", location)
+		commLocation := resp.Header.Get("Location")
+		commUrl, err := url.Parse(commLocation)
+		check(err)
+		commentId := commUrl.Fragment
+		t.Logf("CommentId is: %v", commentId)
+
+		t.Logf("Redirect to %v", commLocation)
 		redir, err := url.Parse(https.URL)
 		check(err)
-		redir.Path = location
+		redir.Path = commLocation
 		resp, err = anonclient.Get(redir.String())
 		if err != nil { t.Fatal(err)	}
 		defer resp.Body.Close()
@@ -357,12 +398,45 @@ func TestSubmitRetrieveComment(t *testing.T) {
 			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", resp)
 		}
 
-		// todo parse xml and get the blog.
-		return true
+		dumpbody, err := httputil.DumpResponse(resp, true)
+		check(err)
+		t.Logf("Blog with comments is: %v", string(dumpbody))
+		
+		// parse xml and get the comment.
+		doc := xmlx.New()
+                err = doc.LoadStream(resp.Body, nil)
+                check(err)
+		comments := doc.SelectNodes("", "comment")
+                t.Logf("list of comments is: %#v\n", comments)
+
+		for _, comm := range comments {
+			t.Logf("comment is: %#v", comm)
+			// search for the correct comment
+			if comm.As("*", "id") == commentId {
+				// test for more
+				if comm.SelectNode("", "commenter").Value != "anonymous" {
+					t.Fatalf("Commenter is not \"anonymous\"")
+				}
+				
+				if comm.SelectNode("", "comment_text").Value != comment.Text {
+					t.Fatalf("Comment text is not what we submitted")
+				}
+
+				if comm.SelectNode("", "comment_title").Value != comment.Title {
+					t.Fatalf("Comment title is not what we submitted")
+				}
+				
+				return true // found it
+			}
+		}
+		t.Fatalf("Missing comment for %v", commLocation)
+		return false
 	}
 	err = quick.Check(submitRetrieveComment, &config)
-        if err != nil { t.Error(err) }
+	if err != nil { t.Error(err) }
 }
+
+
 
 
 var alpha = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"

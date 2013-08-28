@@ -147,7 +147,7 @@ func showBlogs (w http.ResponseWriter, req *http.Request) {
  		"blogs": ds.getBlogs() }))
 }
 
-// match ../blog/<id>(/rest)?
+// match ../blog/<id>#<commentId>
 var blogRE = regexp.MustCompile(`^/blog/([\d]+)/?`)
 
 // showBlog shows a single blow with comments
@@ -239,7 +239,7 @@ func check(err error) {
 
 
 
-// Return the first (not zeroth) string in the array, if not nil (usefull for regexps)
+// Return the first (not zeroth) string in the array, if not nil (useful for regexps)
 func getFirst(s []string) string {
         if s != nil {
                 return s[1]

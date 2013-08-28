@@ -17,13 +17,13 @@
 </p>
 <h3>Comments</h3>
 {{ range $_, $comment := .Comments }}
-  <blog>
-    <blog_title>{{ $comment.Title }}</blog_title>
-    <blogger>{{ $comment.Blogger }}</blogger>
-    <blog_text><pre>{{ $comment.Text }}</pre></blog_text>
-    <blog_signature>{{ $comment.Signature }}</blog_signature>
-    <blog_validation>Here will be the output of the signature validation</blog_validation>
-  </blog>
+  <comment id="{{ $comment.Id }}">
+    Title: <comment_title>{{ $comment.Title }}</comment_title><br />
+    Commenter: <commenter>{{ $comment.Blogger }}</commenter><br />
+    Comment: <comment_text>{{ $comment.Text }}</comment_text><br />
+    Signature: <comment_signature>{{ $comment.Signature }}</comment_signature><br />
+    Validation: <comment_validation>Here will be the output of the signature validation</comment_validation><br />
+  </comment>
 {{ else }}<p>There are no comments. Be the first. Sign up or write anonymous.</p>
 {{ end }}
 <p>Here you can create your comments. You can respond anoynmous or use one of your eccentric identities (digital pseudonyms).</p>
@@ -35,7 +35,7 @@
   <textarea name="cleartext" rows="10" cols="80">TL;DR It was cloudy, you nitwit </textarea><br />
   <input type="submit" name="submit" value="Post my deep thoughts" />
   <input type="hidden" name="signature" />
-  <input type="hidden" name="blogId" value="{{ .blog.Id }}" />
+  <input type="hidden" name="blogId" value="{{ .Blog.Id }}" />
 </form>
 {{ template "tracking" }}
 </body></html>
