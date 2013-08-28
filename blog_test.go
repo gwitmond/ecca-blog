@@ -436,6 +436,158 @@ func TestSubmitRetrieveComment(t *testing.T) {
 	if err != nil { t.Error(err) }
 }
 
+// xyzzy
+func TestSignVerifyComment(t *testing.T) { 
+	regclient := regClient()
+	
+	// create a new blog to attach the comments to.
+	create, err := url.Parse(https.URL)
+	check(err)
+	create.Path="/createblog" // this one requires log in
+
+	form :=  url.Values{
+		"cn": {"A Blogger"},
+		"title": {"Test Title"},
+		"cleartext": {"Some message"},
+		"signature": {"Ignore this signature."}}
+	resp, err := regclient.PostForm(create.String(), form)
+	if err != nil { t.Fatal(err)	}
+	defer resp.Body.Close()
+
+	t.Logf("page is: %#v\n", resp)
+	t.Logf("headers : %#v\n", resp.Header)
+	if resp.StatusCode != 307 {
+			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
+	}
+
+	// get  redirect to Header[Location] expect /blog/<id>#<commentId>
+	bloglocation := resp.Header.Get("Location")
+	blogUrl, err := url.Parse(bloglocation)
+	check(err)
+	blogId := getFirst(blogRE.FindStringSubmatch(blogUrl.Path))
+	t.Logf("Posted blog at %v", bloglocation)
+
+	// Retrieve blog with comments, anonymous
+	anonclient := anonClient()
+
+	submit, err := url.Parse(https.URL)
+	check(err)
+	submit.Path="/submit-comment" // optional log in. We do both
+
+	signVerifyComment := func(comment Comment) bool {
+		// Sanitise input
+		comment.Blogger = srand(len(comment.Blogger))
+		comment.Title = srand(len(comment.Title))
+		comment.Text = srand(len(comment.Text))
+		comment.Signature = srand(len(comment.Signature))
+
+		// Sign it
+		signature, err := Sign(priv2PEM, cert2PEM, comment.Text)
+		if err != nil && err.Error() == "Cannot sign empty message" {
+			t.Log(err)
+			return true // next message.
+		}
+		check(err) // die on other errors
+		comment.Signature = signature // replace that one form the test-generator.
+
+		// Verify the signature
+		valid, message := Verify(comment.Text, signature, chainPEM)
+		if valid == false {
+			t.Fatalf("Verify gave invalid flag. Openssl found it invalid")
+		}
+		if message != comment.Text {
+			t.Fatalf("Message string form Verify (openssl) is not equal to commenttext that has been signed")
+		}
+
+		// Submit it
+		form :=  url.Values{
+			"blogId": {blogId},
+			"title": {comment.Title},
+			"cleartext": {comment.Text},
+			"signature": {comment.Signature}}
+		resp, err := regclient.PostForm(submit.String(), form)
+		if err != nil { t.Fatal(err)	}
+		defer resp.Body.Close()
+
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		body, err := ioutil.ReadAll(resp.Body)
+		check(err)
+		t.Logf("Body is: %v", body)
+		if resp.StatusCode != 307 {
+			t.Fatalf("Error Posting Comment. Expected 307. Got %#v\n", resp)
+		}
+		
+		// redirect to Header[Location] expect /blog/<blogId>#<commentId>
+		commLocation := resp.Header.Get("Location")
+		commUrl, err := url.Parse(commLocation)
+		check(err)
+		commentId := commUrl.Fragment
+		t.Logf("CommentId is: %v", commentId)
+
+		t.Logf("Redirect to %v", commLocation)
+		redir, err := url.Parse(https.URL)
+		check(err)
+		redir.Path = commLocation
+		resp, err = anonclient.Get(redir.String())
+		if err != nil { t.Fatal(err)	}
+		defer resp.Body.Close()
+
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		if resp.StatusCode != 200 {
+			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", resp)
+		}
+
+		dumpbody, err := httputil.DumpResponse(resp, true)
+		check(err)
+		t.Logf("Blog with comments is: %v", string(dumpbody))
+		
+		// parse xml and get the comment.
+		doc := xmlx.New()
+                err = doc.LoadStream(resp.Body, nil)
+                check(err)
+		comments := doc.SelectNodes("", "comment")
+                t.Logf("list of comments is: %#v\n", comments)
+
+		for _, comm := range comments {
+			t.Logf("comment is: %#v", comm)
+			// search for the correct comment
+			if comm.As("*", "id") == commentId {
+				// test for more
+				if comm.SelectNode("", "commenter").Value != nickname {
+					t.Fatalf("Commenter is not \"anonymous\"")
+				}
+				
+				if comm.SelectNode("", "comment_text").Value != comment.Text {
+					t.Fatalf("Comment text is not what we submitted")
+				}
+
+				if comm.SelectNode("", "comment_title").Value != comment.Title {
+					t.Fatalf("Comment title is not what we submitted")
+				}
+				
+				commenttext := comm.SelectNode("", "comment_text").Value
+				signature2  := comm.SelectNode("", "comment_signature").Value
+				// validate again to prove clean transmission through the web and back.
+				valid, message2 := Verify(commenttext, signature2, chainPEM)
+				if valid == false {
+					t.Fatalf("Verify gave invalid flag. Openssl found it invalid")
+				}
+				if message2 != comment.Text {
+					t.Fatalf("Message string form Verify (openssl) is not equal to commenttext that has been signed")
+				}
+				
+				return true // found it
+			}
+		}
+		t.Fatalf("Missing comment for %v", commLocation)
+		return false
+	}
+	err = quick.Check(signVerifyComment, &config)
+	if err != nil { t.Error(err) }
+}
+
 
 
 
