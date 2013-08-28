@@ -43,7 +43,7 @@ import (
 )
 
 var config = quick.Config {
-	MaxCount: 10,
+	MaxCount: 100,
 	Rand: MathRand.New(MathRand.NewSource(time.Now().UnixNano())),
 }
 
@@ -139,7 +139,7 @@ func init() { // set main.ecca to point to need-register template
 	ecca = eccentric.Authentication{
 		RegisterURL:  "https://register-cryptoblog.wtmnd.nl:10501/register-pubkey",
 		Templates: templates,   //Just copy the templates variable
-		Debug: true,  // show debugging
+		Debug: false,  //don't show debugging
 	}
 }
 
@@ -149,26 +149,35 @@ func TestHomepage(t *testing.T) {
 	if err != nil { t.Fatal(err) }
 }
 
+// Test to see if our client certificate setup is correct
 func TestLogin(t *testing.T) {
+	anonclient := anonClient()
+
 	u, err := url.Parse(https.URL)
 	check(err)
 	u.Path="/createblog" // this one requires log in
-	res, err := anonClient().Get(u.String())
+	resp, err :=anonclient.Get(u.String())
 	if err != nil { t.Fatal(err) }
-	if res.StatusCode != 401 {
-		t.Fatalf("expected 401 Authentication Required. Got %v", res.StatusCode)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 401 {
+		t.Fatalf("expected 401 Authentication Required. Got %v", resp.StatusCode)
 	}
 
 	// Now use client certificate to log in
-	res, err = regClient().Get(u.String())
+	regclient := regClient()
+
+	resp, err = regclient.Get(u.String())
 	if err != nil { t.Fatal(err) }
-	if res.StatusCode != 200 {
-		t.Fatalf("Cannot Log in. Expected 200 Authentication Required. Got %v\n", res.StatusCode)
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		t.Fatalf("Cannot Log in. Expected 200 Authentication Required. Got %v\n", resp.StatusCode)
 	}
 }
 
 func TestSubmitRetrieveBlog(t *testing.T) { 
-	client := regClient()
+	regclient := regClient()
 
 	create, err := url.Parse(https.URL)
 	check(err)
@@ -180,26 +189,30 @@ func TestSubmitRetrieveBlog(t *testing.T) {
 			"title": {blog.Title},
 			"cleartext": {blog.Text},
 			"signature": {blog.Signature}}
-		res, err := client.PostForm(create.String(), form)
+		resp, err := regclient.PostForm(create.String(), form)
 		if err != nil { t.Fatal(err)	}
-		t.Logf("page is: %#v\n", res)
-		t.Logf("headers : %#v\n", res.Header)
-		if res.StatusCode != 307 {
-			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", res)
+		defer resp.Body.Close()
+
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		if resp.StatusCode != 307 {
+			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
 		}
 		
 		// redirect to Header[Location]
-		location := res.Header.Get("Location")
+		location := resp.Header.Get("Location")
 		t.Logf("Redirect to %v", location)
 		redir, err := url.Parse(https.URL)
 		check(err)
 		redir.Path = location
-		res, err = client.Get(redir.String())
+		resp, err = regclient.Get(redir.String())
 		if err != nil { t.Fatal(err)	}
-		t.Logf("page is: %#v\n", res)
-		t.Logf("headers : %#v\n", res.Header)
-		if res.StatusCode != 200 {
-			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", res)
+		defer resp.Body.Close()
+
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		if resp.StatusCode != 200 {
+			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", resp)
 		}
 
 		// todo parse xml and get the blog.
@@ -210,7 +223,7 @@ func TestSubmitRetrieveBlog(t *testing.T) {
 }
 
 func TestSignVerifyBlog(t *testing.T) { 
-	client := regClient()
+	regclient := regClient()
 
 	create, err := url.Parse(https.URL)
 	check(err)
@@ -220,7 +233,6 @@ func TestSignVerifyBlog(t *testing.T) {
 		// Sign it
 		signature, err := Sign(priv2PEM, cert2PEM, blog.Text)
 		if err != nil && err.Error() == "Cannot sign empty message" {
-			log.Println(err)
 			t.Log(err)
 			return true // next message.
 		}
@@ -242,31 +254,33 @@ func TestSignVerifyBlog(t *testing.T) {
 			"title": {blog.Title},
 			"cleartext": {blog.Text},
 			"signature": {blog.Signature}}
-		res, err := client.PostForm(create.String(), form)
+		resp, err := regclient.PostForm(create.String(), form)
 		if err != nil { t.Fatal(err)	}
-		t.Logf("page is: %#v\n", res)
-		t.Logf("headers : %#v\n", res.Header)
-		if res.StatusCode != 307 {
-			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", res)
+		defer resp.Body.Close()
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		if resp.StatusCode != 307 {
+			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
 		}
 		
 		// redirect to Header[Location]
-		location := res.Header.Get("Location")
+		location := resp.Header.Get("Location")
 		t.Logf("Redirect to %v", location)
 		redir, err := url.Parse(https.URL)
 		check(err)
 		redir.Path = location
-		res, err = client.Get(redir.String())
+		resp, err = regclient.Get(redir.String())
 		if err != nil { t.Fatal(err)	}
-		t.Logf("page is: %#v\n", res)
-		t.Logf("headers : %#v\n", res.Header)
-		if res.StatusCode != 200 {
-			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", res)
+		defer resp.Body.Close()
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		if resp.StatusCode != 200 {
+			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", resp)
 		}
 
 		// parse xml and get the blog.
 		doc := xmlx.New()
-                err = doc.LoadStream(res.Body, nil)
+                err = doc.LoadStream(resp.Body, nil)
                 check(err)
 		blogs := doc.SelectNodes("", "blog")
                 t.Logf("list of blogs is: %#v\n", blogs)
@@ -308,7 +322,7 @@ func srand(size int) string {
 
 // Sign a message
 func Sign(privkeyPEM []byte, certPEM []byte, message string) (string, error) {
-        log.Printf("signing %v\n", message)
+        // log.Printf("signing %v\n", message)
         if len(message) == 0 {
                 return "", errors.New("Cannot sign empty message")
         }
@@ -331,9 +345,6 @@ func Sign(privkeyPEM []byte, certPEM []byte, message string) (string, error) {
 // Verify the message
 // Return a boolean whether the message is signed by the signature.
 func Verify(message string, signature string, caChainPEM []byte) (bool, string) {
-        log.Printf("verifying\n")
-        //idFilename := makeTempfile("ecca-id-", idPEM)
-        //defer os.Remove(idFilename)
         caFilename := makeTempfile("ecca-ca-", caChainPEM)
         defer os.Remove(caFilename)
         // TODO: create template to merge message and signature in a valid openssl smime like format 
