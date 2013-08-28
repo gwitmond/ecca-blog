@@ -70,6 +70,11 @@ func (ds *Datastore) getBlogs() (blogs []*Blog) {
 	return // blogs
 }
 
+//******* Comments 
+func (ds *Datastore) writeComment(comment *Comment) {
+	check(ds.dbmap.Insert(comment))
+}
+
 // Get the comments for the blog
 func (ds *Datastore) getComments(blogId int) (comments []*Comment) {
 	_, err := ds.dbmap.Select(&comments, "SELECT * FROM comments WHERE blogId = ? ORDER BY id", blogId)

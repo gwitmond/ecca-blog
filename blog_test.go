@@ -43,7 +43,7 @@ import (
 )
 
 var config = quick.Config {
-	MaxCount: 100,
+	MaxCount: 10,
 	Rand: MathRand.New(MathRand.NewSource(time.Now().UnixNano())),
 }
 
@@ -230,6 +230,12 @@ func TestSignVerifyBlog(t *testing.T) {
 	create.Path="/createblog" // this one requires log in
 
 	signVerifyBlog := func(blog Blog) bool {
+		// Sanitise input
+		blog.Blogger = srand(len(blog.Blogger))
+		blog.Title = srand(len(blog.Title))
+		blog.Text = srand(len(blog.Text))
+		blog.Signature = srand(len(blog.Signature))
+
 		// Sign it
 		signature, err := Sign(priv2PEM, cert2PEM, blog.Text)
 		if err != nil && err.Error() == "Cannot sign empty message" {
@@ -303,6 +309,58 @@ func TestSignVerifyBlog(t *testing.T) {
 		return true
 	}
 	err = quick.Check(signVerifyBlog, &config)
+        if err != nil { t.Error(err) }
+}
+
+//****************** Comments **********************************//
+
+func TestSubmitRetrieveComment(t *testing.T) { 
+	anonclient := anonClient()
+	//regclient := regClient()
+
+	submit, err := url.Parse(https.URL)
+	check(err)
+	submit.Path="/submit-comment" // optional log in. We do both
+
+	submitRetrieveComment := func(comment Comment) bool {
+		form :=  url.Values{
+			"blogId": {"1"},
+			"title": {comment.Title},
+			"cleartext": {comment.Text},
+			"signature": {comment.Signature}}
+		resp, err := anonclient.PostForm(submit.String(), form)
+		if err != nil { t.Fatal(err)	}
+		defer resp.Body.Close()
+
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		body, err := ioutil.ReadAll(resp.Body)
+		check(err)
+		t.Logf("Body is: %v", body)
+		if resp.StatusCode != 307 {
+			t.Fatalf("Error Posting Comment. Expected 307. Got %#v\n", resp)
+		}
+		
+		// redirect to Header[Location]
+		location := resp.Header.Get("Location")
+		t.Logf("Redirect to %v", location)
+		redir, err := url.Parse(https.URL)
+		check(err)
+		redir.Path = location
+		resp, err = anonclient.Get(redir.String())
+		if err != nil { t.Fatal(err)	}
+		defer resp.Body.Close()
+
+		t.Logf("page is: %#v\n", resp)
+		t.Logf("headers : %#v\n", resp.Header)
+		if resp.StatusCode != 200 {
+			t.Fatalf("Error reading Blog message. Expected 200. Got %#v\n", resp)
+		}
+
+		// todo parse xml and get the blog.
+		return true
+	}
+	err = quick.Check(submitRetrieveComment, &config)
         if err != nil { t.Error(err) }
 }
 

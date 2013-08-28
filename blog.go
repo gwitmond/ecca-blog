@@ -66,7 +66,7 @@ func initServeMux(mux *http.ServeMux) *http.ServeMux {
 	mux.Handle("/createblog", ecca.LoggedInHandler(createBlog, "needToRegister.template"))
 	mux.HandleFunc("/blog/", showBlog) // show a single blog/<id>  (for everyone)
 
-	mux.HandleFunc("/submit-comment/", submitComment)   // (optionally signed)
+	mux.HandleFunc("/submit-comment", submitComment)   // (optionally signed)
 
 	//mux.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
 	//mux.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
@@ -212,8 +212,8 @@ func submitComment(w http.ResponseWriter, req *http.Request) {
 			Text: req.Form.Get("cleartext"),
 			Signature: req.Form.Get("signature"),
 		}
-		check(ds.write(comment))
-		http.Redirect(w, req, fmt.Sprintf("/blog/%v", blogId), 302)
+		ds.writeComment(comment) // sets comment.Id
+		http.Redirect(w, req, fmt.Sprintf("/blog/%v#%v", blogId, comment.Id), http.StatusTemporaryRedirect)
 
  	default: 
  		http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
