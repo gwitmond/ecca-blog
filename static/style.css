@@ -20,7 +20,7 @@ ul.menu li a {
     background: grey;
     margin-left: 1px;
     white-space: nowrap;
-		}
+}
 
 ul.menu li a:hover { background: darkgrey; }
 li:hover ul { 
@@ -34,58 +34,56 @@ li:hover li {
 li:hover a { background: grey; }
 li:hover li a:hover { background: #95A9B1; }
 
-body { margin-left: 10%; margin-right: 10%; }
-body { font-family:  sans-serif; }
-body { background-color: #00CC44;  }
+body {
+    margin-left: 7%; margin-right: 7%;
+    font-family:  sans-serif;
+    background-color: #88ddaa;
+}
 
-h1 { margin-left: -8%;}
+h1 { margin-left: -3%;}
 h1,h2,h3 { font-family: Garamond, "Times New Roman", serif; }
 
-   div.message { background-color: #EEEEEE; 
-                 border: solid; border-width: thin; width: 100%;
-		 padding: 0.5em;
-   }
-   from        { background-color: #33FF33;
-	         margin-bottom: 0.5em;
-   }
-   ciphertext { background-color: #CCCC99;
-   	        margin-left: 2em; 
-		display: block;
-		font-family: monospace;
-		white-space: pre; 
-   }
-   cleartext { background-color: #33FF33;
-               margin-left: 2em;
-	       padding: 0.25em;
-   } 
+#blog {
+    background-color: #CCCCCC; 
+    border: solid; border-width: thin; width: 100%;
+    padding: 0.0em;
+    
+ }
 
-blog { 
-    display: block;
-    background-color: white;
-    }
+ecca_signed_message br { display: none }
 
-blog_title {
+ecca_signed_message {
     display: block;
-    margin-left: 4%;
-    font-family: Garamond, "Times New Roman", serif; 
-    padding-bottom: 0.5em;
-    font-size: 200%;
-}
-blogger {
-    display: block;
-    background-color: #33FF33;
-    margin: 0.5em;
+    background-color: #EEEEEE;
+    padding: 0.5em; 
+    margin-bottom: 1em;
+    line-spacing: 0.1em;
 }
 
-blog_text {
+ecca_title {
     display: block;
-    background-color: #33FF33;
-    margin: 0.5em;
-}
-blog_signature {
-    background-color: #CCCC99;
-    margin-left: 2em; 
+    margin: 0em;
+    padding: 0.2em 2em;
+    background-color: #FFFFFF;
+    font-weight: bold;
+}       
+
+ecca_author   {
     display: block;
-    font-family: monospace;
-    white-space: pre; 
+    margin-top: 0.2em;
+    padding: 0.2em 2em;
+    background-color: #FFFFFF;
 }
+
+ecca_text { 
+     display: block;
+     background-color: #EEEE99;
+     padding: 0.2em 0.2em; 
+     margin-top: 0.2em;
+ }
+
+ecca_signature {
+    display: block;
+    padding: 0.2em 0.2em; 
+    margin-top: 0.2em;
+}  
