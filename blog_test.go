@@ -294,8 +294,8 @@ func TestSignVerifyBlog(t *testing.T) {
 		if len(blogs) != 1 {
 			t.Fatalf("Error. Expect exactly one <blog> entry. Got %v", len(blogs))
 		}
-		blogtextNode := blogs[0].SelectNode("", "blog_text")
-		signatureNode  := blogs[0].SelectNode("", "blog_signature")
+		blogtextNode := blogs[0].SelectNode("", "ecca_text")
+		signatureNode  := blogs[0].SelectNode("", "ecca_signature")
 		blogtext := blogtextNode.Value // may return nil-pointer error
 		signature2 := signatureNode.Value
 
@@ -414,18 +414,18 @@ func TestSubmitRetrieveComment(t *testing.T) {
 			// search for the correct comment
 			if comm.As("*", "id") == commentId {
 				// test for more
-				if comm.SelectNode("", "commenter").Value != "anonymous" {
+				if comm.SelectNode("", "ecca_author").Value != "anonymous" {
 					t.Fatalf("Commenter is not \"anonymous\"")
 				}
 				
-				if comm.SelectNode("", "comment_text").Value != comment.Text {
+				if comm.SelectNode("", "ecca_text").Value != comment.Text {
 					t.Fatalf("Comment text is not what we submitted")
 				}
 
-				if comm.SelectNode("", "comment_title").Value != comment.Title {
+				if comm.SelectNode("", "ecca_title").Value != comment.Title {
 					t.Fatalf("Comment title is not what we submitted")
 				}
-				
+
 				return true // found it
 			}
 		}
@@ -555,20 +555,20 @@ func TestSignVerifyComment(t *testing.T) {
 			// search for the correct comment
 			if comm.As("*", "id") == commentId {
 				// test for more
-				if comm.SelectNode("", "commenter").Value != nickname {
+				if comm.SelectNode("", "ecca_author").Value != nickname {
 					t.Fatalf("Commenter is not \"anonymous\"")
 				}
 				
-				if comm.SelectNode("", "comment_text").Value != comment.Text {
+				if comm.SelectNode("", "ecca_text").Value != comment.Text {
 					t.Fatalf("Comment text is not what we submitted")
 				}
 
-				if comm.SelectNode("", "comment_title").Value != comment.Title {
+				if comm.SelectNode("", "ecca_title").Value != comment.Title {
 					t.Fatalf("Comment title is not what we submitted")
 				}
 				
-				commenttext := comm.SelectNode("", "comment_text").Value
-				signature2  := comm.SelectNode("", "comment_signature").Value
+				commenttext := comm.SelectNode("", "ecca_text").Value
+				signature2  := comm.SelectNode("", "ecca_signature").Value
 				// validate again to prove clean transmission through the web and back.
 				valid, message2 := Verify(commenttext, signature2, chainPEM)
 				if valid == false {
