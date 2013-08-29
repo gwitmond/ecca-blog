@@ -15,6 +15,10 @@
 	  <ecca_signature>{{ .Blog.Signature }}</ecca_signature><br />
 	  <ecca_validation>Here will be the output of the signature validation</ecca_validation>
 	</ecca_signed_message>
+	 <form method="GET" action="/send-message">
+          <input type="hidden" name="addressee" value="{{ .Blog.Blogger }}" />
+          <input type="submit" name="reply" value="Send Private Message" />
+        </form>
       </blog>
     </p>
     <h1>Comments</h1>
@@ -38,9 +42,9 @@
     <form method="POST" action="/submit-comment">
       <input type="hidden" name="sign" value="optional" />
       <!-- <input type="hidden" name="certificate_url" value="{{ .IdURL }}" /> -->
-      <label>Title: </label><input type="text" size="50" name="title" />
+      <label>Title: </label><input type="text" size="50" name="title" value="TL;DR" />
       <br />
-      <textarea name="cleartext" rows="10" cols="80">TL;DR.  you nitwit </textarea><br />
+      <textarea name="cleartext" rows="10" cols="80">Interesting thoughts.</textarea><br />
       <input type="submit" name="submit" value="Post my deep thoughts" />
       <input type="hidden" name="signature" />
       <input type="hidden" name="blogId" value="{{ .Blog.Id }}" />

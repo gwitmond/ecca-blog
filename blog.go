@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"crypto/tls"
 	"html/template"
+	"net/url"
 	"flag"
 	"regexp"
 	"strconv"
@@ -53,6 +54,9 @@ var templates = template.Must(template.ParseFiles(
 	"templates/showBlog.template",
 	"templates/createBlog.template",
 
+	"templates/sendMessage.template",
+	"templates/readMessage.template",
+
 // standard templates
 	"templates/needToRegister.template",
 	"templates/menu.template",
@@ -68,8 +72,8 @@ func initServeMux(mux *http.ServeMux) *http.ServeMux {
 
 	mux.HandleFunc("/submit-comment", submitComment)   // (optionally signed)
 
-	//mux.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
-	//mux.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
+	mux.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
+	mux.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
 
 	mux.Handle("/static/", http.FileServer(http.Dir(".")))
 	return mux
@@ -228,6 +232,91 @@ func checkUserIsLoggedIn(req *http.Request) (string, bool) {
 	return req.TLS.PeerCertificates[0].Subject.CommonName, true
 }
 
+
+//*************** Private Messaging *****************************//
+
+// Message struct is used to display received messages
+type Message struct {
+	Id int // auto id
+        ToCN string
+        FromCN string
+        Ciphertext string // []byte  // don't convert to utf-8 string and back
+}
+
+
+// readMessages shows you the messages others have sent you.
+func readMessages (w http.ResponseWriter, req *http.Request) {
+        // User is logged in
+        cn := req.TLS.PeerCertificates[0].Subject.CommonName
+        switch req.Method {
+        case "GET": 
+                // set this header to signal the user's Agent to perform data decryption.
+                w.Header().Set("Eccentric-Authentication", "decryption=\"required\"")
+                w.Header().Set("Content-Type", "text/html, charset=utf8")
+                messages := ds.getMessages(cn)
+                check(templates.ExecuteTemplate(w, "readMessage.template", map[string]interface{}{
+                        "CN": cn,
+                        "messages": messages,
+                }))
+                
+        default:
+                http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
+
+        }
+}
+
+// sendMessage takes an encrypted message and delivers it at the message box of the recipient
+// Right now, that's our own dating site. It could perform a MitM.
+// See: http://eccentric-authentication.org/eccentric-authentication/private_messaging.html
+func sendMessage(w http.ResponseWriter, req *http.Request) {
+        cn := req.TLS.PeerCertificates[0].Subject.CommonName
+        switch req.Method {
+        case "GET": 
+                req.ParseForm()
+                toCN := req.Form.Get("addressee")
+
+                // idURL 
+                // We do provide a path to the CA to let the user retrieve the public key of the recipient.
+                // User is free to obtain in other ways... :-)
+                idURL, err := url.Parse(ecca.RegisterURL)
+                check(err)
+                idURL.Path = "/get-certificate"
+                q := idURL.Query()
+                q.Set("nickname", toCN)
+                idURL.RawQuery = q.Encode()
+
+                check(templates.ExecuteTemplate(w, "sendMessage.template", map[string]interface{}{
+                        "CN": cn,            // from us
+                        "ToCN": toCN,   // to recipient
+                        "IdURL": idURL, // where to find the certificate with public key
+                }))
+
+        case "POST":
+                req.ParseForm()
+		addressee := req.Form.Get("addressee")
+		if addressee == "anonymous" {
+			// TODO check full eccentric identity 
+			// TODO Create neat error page explaining why we don't want your plaintext private message
+			w.Write([]byte(`<html><p>You can't send Private Messages to anonymous people. <b>We can't keep it secret!</b> We won't accept it.</p></html>`))
+			return
+		}
+                ciphertext := req.Form.Get("ciphertext")
+                if ciphertext == "" {
+                        w.Write([]byte(`<html><p>Your message was not encrypted. We won't accept it. Please use the ecca-proxy.</p></html>`))
+                        return
+                }
+                ds.writeMessage(&Message{
+                        FromCN: cn,
+                        ToCN: addressee,
+                        Ciphertext: ciphertext,
+                })
+                w.Write([]byte(`<html><p>Thank you, your message will be delivered at galactic speed.</p></html>`))
+
+        default:
+                http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
+        }
+
+}
 
 	
 func check(err error) {

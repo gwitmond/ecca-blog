@@ -34,6 +34,7 @@ func DatastoreOpen(storename string) (*Datastore) {
 	// set key to be unique. We can't allow multiple Id's anyway.
         dbmap.AddTableWithName(Blog{}, "blogs").SetKeys(true, "Id")
         dbmap.AddTableWithName(Comment{}, "comments").SetKeys(true, "Id")
+        dbmap.AddTableWithName(Message{}, "messages").SetKeys(true, "Id")
 	dbmap.CreateTablesIfNotExists()
         // dbmap.TraceOn("[gorp]", log.New(os.Stdout, "eccaCA:", log.Lmicroseconds)) 
 	return &Datastore{
@@ -83,3 +84,13 @@ func (ds *Datastore) getComments(blogId int) (comments []*Comment) {
 }
 
 
+//********** Messages
+func (ds *Datastore) writeMessage(message *Message) {
+	check(ds.dbmap.Insert(message))
+}
+
+func (ds *Datastore) getMessages(recipientCN string) (messages []*Message) {
+	_, err := ds.dbmap.Select(&messages, "SELECT * FROM messages WHERE toCN = ? ORDER BY id", recipientCN)
+	check(err)
+	return // comments
+}
