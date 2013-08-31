@@ -93,6 +93,20 @@ ecca_signature {
     margin-top: 0.2em;
 }  
 
+.button {
+    border: solid; border-width: thin; width: 100%;
+    padding: 0.1em 0.2em;
+    background-color: #FFFFFF;
+    text-decoration: none;
+    color: #000000;
+}
+
+a:hover { 
+    background-color: lightblue;
+    text-decoration: underline
+}
+
+
 /* private messages */
 
 div.message { 

@@ -310,7 +310,7 @@ func sendMessage(w http.ResponseWriter, req *http.Request) {
                         ToCN: addressee,
                         Ciphertext: ciphertext,
                 })
-                w.Write([]byte(`<html><p>Thank you, your message will be delivered at galactic speed.</p></html>`))
+                w.Write([]byte(`<html><p>Thank you, your message will be delivered.</p></html>`))
 
         default:
                 http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )

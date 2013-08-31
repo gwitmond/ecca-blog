@@ -13,12 +13,9 @@
 	  <ecca_author>{{ .Blog.Blogger }}</ecca_author><br />
 	  <ecca_text>{{ .Blog.Text }}</ecca_text><br />
 	  <ecca_signature>{{ .Blog.Signature }}</ecca_signature><br />
-	  <ecca_validation>Here will be the output of the signature validation</ecca_validation>
+	  <ecca_validation>Here will be the output of the signature validation</ecca_validation><br />
 	</ecca_signed_message>
-	 <form method="GET" action="/send-message">
-          <input type="hidden" name="addressee" value="{{ .Blog.Blogger }}" />
-          <input type="submit" name="reply" value="Send Private Message" />
-        </form>
+	  <a class="button"  href="/send-message?addressee={{ .Blog.Blogger }}">Send Private Message</a>
       </blog>
     </p>
     <h1>Comments</h1>
@@ -33,6 +30,7 @@
 	Signature: <ecca_signature>{{ $comment.Signature }}</ecca_signature><br />
 	Validation: <ecca_validation>Here will be the output of the signature validation</ecca_validation>
       </ecca_signed_message>
+	  <a class="button"  href="/send-message?addressee={{ .Blog.Blogger }}">Send Private Message</a>
     </comment>
     </p>
     {{ else }}<p>There are no comments. Be the first. Sign up or write anonymous.</p>
