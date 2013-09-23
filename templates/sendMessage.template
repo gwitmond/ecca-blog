@@ -1,0 +1,18 @@
+<html>
+<head>
+<link type="text/css" rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+{{ template "menu" }}
+<h1>Send a truly private message</h1>
+<p>Hello {{ .CN }}. Here you can send a truly private message. It will be encrypted with the key of {{ .ToCN }}. It will be encrypted by your user agent, not by us. We (this web site) cannot read it at all. The only things we can do is deliver it or delete it. On that you have to trust us.</p>
+<form method="POST">
+<input type="hidden" name="encrypt" value="required">
+<input type="hidden" name="certificate_url" value="{{ .IdURL }}">
+<br>
+<textarea name="cleartext" rows="8" cols="80">I like what you write here, however....
+   [insert rambling of my own]</textarea><br>
+<input type="submit" name="submit" value="Deliver">
+</form>
+{{ template "tracking" }}
+</body></html>
