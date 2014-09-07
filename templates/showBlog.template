@@ -30,7 +30,7 @@
 	Signature: <ecca_signature>{{ $comment.Signature }}</ecca_signature><br />
 	Validation: <ecca_validation>Here will be the output of the signature validation</ecca_validation>
       </ecca_signed_message>
-	  <a class="button"  href="/send-message?addressee={{ .Blog.Blogger }}">Send Private Message</a>
+	  <a class="button"  href="/send-message?addressee={{ $comment.Blogger }}">Send Private Message</a>
     </comment>
     </p>
     {{ else }}<p>There are no comments. Be the first. Sign up or write anonymous.</p>
