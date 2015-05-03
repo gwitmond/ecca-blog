@@ -91,7 +91,11 @@ ecca_signature {
     display: block;
     padding: 0.2em 0.2em; 
     margin-top: 0.2em;
-}  
+}
+
+.ecca_disabled {
+    color: #888 !important;
+}
 
 .button {
     border: solid; border-width: thin; width: 100%;

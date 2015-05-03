@@ -12,25 +12,25 @@
 	  <b><ecca_title>{{ .Blog.Title}}</ecca_title></b><br />
 	  <ecca_author>{{ .Blog.Blogger }}</ecca_author><br />
 	  <ecca_text>{{ .Blog.Text }}</ecca_text><br />
-	  <ecca_signature>{{ .Blog.Signature }}</ecca_signature><br />
+	  <ecca_signature id="blog_id_{{ .Blog.Id }}">{{ .Blog.Signature }}</ecca_signature><br />
 	  <ecca_validation>Here will be the output of the signature validation</ecca_validation><br />
 	</ecca_signed_message>
-	  <a class="button"  href="/send-message?addressee={{ .Blog.Blogger }}">Send Private Message</a>
+	  <a class="button ecca-private-message"  href="/send-message?addressee={{ .Blog.Blogger }}">Send Private Message</a>
       </blog>
     </p>
     <h1>Comments</h1>
     <div id="comments">
     {{ range $_, $comment := .Comments }}
     <p id="comment">
-    <comment id="{{ $comment.Id }}">
-      <ecca_signed_message>
+    <comment>
+      <ecca_signed_message ecca_id="comment_{{ $comment.Id }}">
 	Title: <b><ecca_title>{{ $comment.Title }}</ecca_title></b><br />
 	Commenter: <ecca_author>{{ $comment.Blogger }}</ecca_author><br />
 	Comment: <ecca_text>{{ $comment.Text }}</ecca_text><br />
 	Signature: <ecca_signature>{{ $comment.Signature }}</ecca_signature><br />
 	Validation: <ecca_validation>Here will be the output of the signature validation</ecca_validation>
       </ecca_signed_message>
-	  <a class="button"  href="/send-message?addressee={{ $comment.Blogger }}">Send Private Message</a>
+	  <a class="button ecca-private-message" ecca_id_ref="comment_{{ $comment.Id }}" href="/send-message?addressee={{ $comment.Blogger }}">Send Private Message</a>
     </comment>
     </p>
     {{ else }}<p>There are no comments. Be the first. Sign up or write anonymous.</p>
