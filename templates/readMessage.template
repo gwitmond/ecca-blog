@@ -9,8 +9,8 @@
 <h1>Messages</h1>
 <p>These are the messages you have received</p>
 
-{{ range $index, $message := .messages }} 
-   
+{{ range $index, $message := .messages }}
+
   <div class="message">
    <ecca_message>
      Message from <from>{{ $message.FromCN }}</from><br />

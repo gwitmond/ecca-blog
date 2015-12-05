@@ -28,13 +28,13 @@ func TestMemoryDB(t *testing.T) {
 	testStoreRetrieve := func(c Blog) bool {
 		// store
 		ds.writeBlog(&c)
-		
+
 		// retrieve
 		res := ds.getBlog(c.Id)
 
 		return c == *res
 	}
-	err := quick.Check(testStoreRetrieve, 
+	err := quick.Check(testStoreRetrieve,
 		&quick.Config{
 			MaxCount: 10,
 			Rand: MathRand.New(MathRand.NewSource(time.Now().UnixNano())),

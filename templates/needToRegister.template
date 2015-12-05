@@ -13,7 +13,7 @@
 
 <h3>With a User Agent<h/3>
 
-<p>For the best experience, please install the <a href="https://github.com/gwitmond/ecca-proxy">ecca-proxy</a>. 
+<p>For the best experience, please install the <a href="https://github.com/gwitmond/ecca-proxy">ecca-proxy</a>.
 This proxy is designed to do all the hard work and makes using client certificates a breeze on any site that accepts Eccentric Authentication.</p>
 
 <p>Regrettably, you need to be a Software Adventurer to install and run it.</p>
@@ -23,14 +23,14 @@ This proxy is designed to do all the hard work and makes using client certificat
 <h3>Semi automatically</h3>
 
 <p>If you use the Firefox browser you can register at the <a href="https://register-dating.wtmnd.nl:10444/signup-genkey.html">Certificate Server</a>.</p>
-<p>With the certificate you can log in into the site but you won't be able to send encrypted messages. 
-To protect your privacy, we delete all messages you send that are not encrypted. 
-Although you can receive encrypted messages, you'll have a nice puzzle to decode it. 
+<p>With the certificate you can log in into the site but you won't be able to send encrypted messages.
+To protect your privacy, we delete all messages you send that are not encrypted.
+Although you can receive encrypted messages, you'll have a nice puzzle to decode it.
 The User Agent above takes care of all that.
 
 <h3>Manually</h3>
 
-<p>Even with other browsers you can log in. But be warned, the process is not for the faint-of-hearts. 
+<p>Even with other browsers you can log in. But be warned, the process is not for the faint-of-hearts.
 You'll need to run the </em>openssl</em> command with lots of arcane options. Twice.</p>
 
 <p>You can register at the <a href="https://register-dating.wtmnd.nl:10444/signup.html">Certificate Server</a>. It has the instructions on what to do and how to get that certificate into your browser</p>

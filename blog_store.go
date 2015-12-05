@@ -2,7 +2,7 @@
 //
 // Create a blog site that allows bloggers to establish a reputation (good or bad) based upon what they write.
 // Note, everything anyone writes is signed by their private key.
-// Unless one writes as Anonymous 
+// Unless one writes as Anonymous
 //
 // Copyright 2013, Guido Witmond <guido@witmond.nl>
 // Licensed under AGPL v3 or later. See LICENSE
@@ -36,7 +36,7 @@ func DatastoreOpen(storename string) (*Datastore) {
         dbmap.AddTableWithName(Comment{}, "comments").SetKeys(true, "Id")
         dbmap.AddTableWithName(Message{}, "messages").SetKeys(true, "Id")
 	dbmap.CreateTablesIfNotExists()
-        // dbmap.TraceOn("[gorp]", log.New(os.Stdout, "eccaCA:", log.Lmicroseconds)) 
+        // dbmap.TraceOn("[gorp]", log.New(os.Stdout, "eccaCA:", log.Lmicroseconds))
 	return &Datastore{
 		Storename: storename,
 		dbmap: dbmap,
@@ -71,7 +71,7 @@ func (ds *Datastore) getBlogs() (blogs []*Blog) {
 	return // blogs
 }
 
-//******* Comments 
+//******* Comments
 func (ds *Datastore) writeComment(comment *Comment) {
 	check(ds.dbmap.Insert(comment))
 }

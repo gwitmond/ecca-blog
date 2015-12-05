@@ -177,7 +177,7 @@ func TestLogin(t *testing.T) {
 	}
 }
 
-func TestSubmitRetrieveBlog(t *testing.T) { 
+func TestSubmitRetrieveBlog(t *testing.T) {
 	regclient := regClient()
 
 	create, err := url.Parse(https.URL)
@@ -199,7 +199,7 @@ func TestSubmitRetrieveBlog(t *testing.T) {
 		if resp.StatusCode != 307 {
 			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
 		}
-		
+
 		// redirect to Header[Location]
 		location := resp.Header.Get("Location")
 		t.Logf("Redirect to %v", location)
@@ -223,7 +223,7 @@ func TestSubmitRetrieveBlog(t *testing.T) {
         if err != nil { t.Error(err) }
 }
 
-func TestSignVerifyBlog(t *testing.T) { 
+func TestSignVerifyBlog(t *testing.T) {
 	regclient := regClient()
 
 	create, err := url.Parse(https.URL)
@@ -269,7 +269,7 @@ func TestSignVerifyBlog(t *testing.T) {
 		if resp.StatusCode != 307 {
 			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
 		}
-		
+
 		// redirect to Header[Location]
 		location := resp.Header.Get("Location")
 		t.Logf("Redirect to %v", location)
@@ -315,10 +315,10 @@ func TestSignVerifyBlog(t *testing.T) {
 
 //****************** Comments **********************************//
 
-func TestSubmitRetrieveComment(t *testing.T) { 
+func TestSubmitRetrieveComment(t *testing.T) {
 	// create a new blog to attach the comments to.
 	regclient := regClient()
-	
+
 	create, err := url.Parse(https.URL)
 	check(err)
 	create.Path="/createblog" // this one requires log in
@@ -331,13 +331,13 @@ func TestSubmitRetrieveComment(t *testing.T) {
 	resp, err := regclient.PostForm(create.String(), form)
 	if err != nil { t.Fatal(err)	}
 	defer resp.Body.Close()
-	
+
 	t.Logf("page is: %#v\n", resp)
 	t.Logf("headers : %#v\n", resp.Header)
 	if resp.StatusCode != 307 {
 			t.Fatalf("Error Posting Blog message. Expected 307. Got %#v\n", resp)
 	}
-		
+
 	// get  redirect to Header[Location] expect /blog/<id>#<commentId>
 	bloglocation := resp.Header.Get("Location")
 	blogUrl, err := url.Parse(bloglocation)
@@ -376,7 +376,7 @@ func TestSubmitRetrieveComment(t *testing.T) {
 		if resp.StatusCode != 307 {
 			t.Fatalf("Error Posting Comment. Expected 307. Got %#v\n", resp)
 		}
-		
+
 		// redirect to Header[Location]
 		commLocation := resp.Header.Get("Location")
 		commUrl, err := url.Parse(commLocation)
@@ -401,7 +401,7 @@ func TestSubmitRetrieveComment(t *testing.T) {
 		dumpbody, err := httputil.DumpResponse(resp, true)
 		check(err)
 		t.Logf("Blog with comments is: %v", string(dumpbody))
-		
+
 		// parse xml and get the comment.
 		doc := xmlx.New()
                 err = doc.LoadStream(resp.Body, nil)
@@ -417,7 +417,7 @@ func TestSubmitRetrieveComment(t *testing.T) {
 				if comm.SelectNode("", "ecca_author").Value != "anonymous" {
 					t.Fatalf("Commenter is not \"anonymous\"")
 				}
-				
+
 				if comm.SelectNode("", "ecca_text").Value != comment.Text {
 					t.Fatalf("Comment text is not what we submitted")
 				}
@@ -437,9 +437,9 @@ func TestSubmitRetrieveComment(t *testing.T) {
 }
 
 // xyzzy
-func TestSignVerifyComment(t *testing.T) { 
+func TestSignVerifyComment(t *testing.T) {
 	regclient := regClient()
-	
+
 	// create a new blog to attach the comments to.
 	create, err := url.Parse(https.URL)
 	check(err)
@@ -517,7 +517,7 @@ func TestSignVerifyComment(t *testing.T) {
 		if resp.StatusCode != 307 {
 			t.Fatalf("Error Posting Comment. Expected 307. Got %#v\n", resp)
 		}
-		
+
 		// redirect to Header[Location] expect /blog/<blogId>#<commentId>
 		commLocation := resp.Header.Get("Location")
 		commUrl, err := url.Parse(commLocation)
@@ -542,7 +542,7 @@ func TestSignVerifyComment(t *testing.T) {
 		dumpbody, err := httputil.DumpResponse(resp, true)
 		check(err)
 		t.Logf("Blog with comments is: %v", string(dumpbody))
-		
+
 		// parse xml and get the comment.
 		doc := xmlx.New()
                 err = doc.LoadStream(resp.Body, nil)
@@ -558,7 +558,7 @@ func TestSignVerifyComment(t *testing.T) {
 				if comm.SelectNode("", "ecca_author").Value != nickname {
 					t.Fatalf("Commenter is not \"anonymous\"")
 				}
-				
+
 				if comm.SelectNode("", "ecca_text").Value != comment.Text {
 					t.Fatalf("Comment text is not what we submitted")
 				}
@@ -566,7 +566,7 @@ func TestSignVerifyComment(t *testing.T) {
 				if comm.SelectNode("", "ecca_title").Value != comment.Title {
 					t.Fatalf("Comment title is not what we submitted")
 				}
-				
+
 				commenttext := comm.SelectNode("", "ecca_text").Value
 				signature2  := comm.SelectNode("", "ecca_signature").Value
 				// validate again to prove clean transmission through the web and back.
@@ -577,7 +577,7 @@ func TestSignVerifyComment(t *testing.T) {
 				if message2 != comment.Text {
 					t.Fatalf("Message string form Verify (openssl) is not equal to commenttext that has been signed")
 				}
-				
+
 				return true // found it
 			}
 		}
@@ -616,7 +616,7 @@ func Sign(privkeyPEM []byte, certPEM []byte, message string) (string, error) {
 
         certFileName := makeTempfile("ecca-cert-", certPEM)
         defer os.Remove(certFileName)
-        err, stdout, stderr := run(strings.NewReader(message), 
+        err, stdout, stderr := run(strings.NewReader(message),
                 "openssl", "smime", "-sign", "-signer", certFileName,  "-inkey", keyFileName)
         if err != nil {
                 return "", errors.New(fmt.Sprintf("Error decrypting message. Openssl says: %s\n", stderr.String()))
@@ -631,14 +631,14 @@ func Sign(privkeyPEM []byte, certPEM []byte, message string) (string, error) {
 func Verify(message string, signature string, caChainPEM []byte) (bool, string) {
         caFilename := makeTempfile("ecca-ca-", caChainPEM)
         defer os.Remove(caFilename)
-        // TODO: create template to merge message and signature in a valid openssl smime like format 
-        err, stdout, stderr := run(strings.NewReader(signature), 
+        // TODO: create template to merge message and signature in a valid openssl smime like format
+        err, stdout, stderr := run(strings.NewReader(signature),
                 "openssl", "smime", "-verify",  "-CAfile", caFilename)
         if err != nil {
                 log.Printf("Error verifying message. Openssl says: %s\n", stderr.String())
                 return false, stderr.String() // return error message for now.
         }
-        // Note: with openssl smime signing, the true message is in the signature, we return what we get back from openssl 
+        // Note: with openssl smime signing, the true message is in the signature, we return what we get back from openssl
         // TODO: return message == stdout.String(), plus "error message in case it is false"
         return true, stdout.String() // or Bytes()
 }

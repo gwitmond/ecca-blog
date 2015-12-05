@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export PROGRAM=./run-cryptoblog.sh
+export PROGRAM=./run-cryptoblogdev.sh
 rerun () {
    kill -TERM `cat .gopid`
    sleep 1 

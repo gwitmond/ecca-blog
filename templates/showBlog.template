@@ -33,10 +33,10 @@
 	  <a class="button ecca-private-message" ecca_id_ref="comment_{{ $comment.Id }}" href="/send-message?addressee={{ $comment.Blogger }}">Send Private Message</a>
     </comment>
     </p>
-    {{ else }}<p>There are no comments. Be the first. Sign up or write anonymous.</p>
+    {{ else }}<p>There are no comments. Be the first. Sign up with an account or write anonymous.</p>
     {{ end }}
     </div>
-    <p>Here you can create your comments. You can respond anoynmous or use one of your eccentric identities (digital pseudonyms).</p>
+    <p>Here you can create your comments. You can respond anonymous or use one of your eccentric identities (digital pseudonyms).</p>
     <form method="POST" action="/submit-comment">
       <input type="hidden" name="sign" value="optional" />
       <!-- <input type="hidden" name="certificate_url" value="{{ .IdURL }}" /> -->

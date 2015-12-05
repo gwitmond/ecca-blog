@@ -1,3 +1,4 @@
+
 <html>
 <head>
 <link type="text/css" rel="stylesheet" href="/static/style.css"/>
@@ -14,10 +15,10 @@ CryptoBlog is a blog like any other, but with safe, secure and anonymous account
 
 <p>The secret sauce of this site is in the way we use cryptography.</p>
 
-<p>To be honest, all that cryptography is complicated. It gets easy when you have a computer program that 
-does all that for you. We have that program. It's the 
-<a href="https://github.com/gwitmond/ecca-proxy">ecca-proxy</a>. 
-Right now, it's only for the adventurers who love to tinker with software. 
+<p>To be honest, all that cryptography is complicated. It gets easy when you have a computer program that
+does all that for you. We have that program. It's the
+<a href="https://github.com/gwitmond/ecca-proxy">ecca-proxy</a>.
+Right now, it's only for the adventurers who love to tinker with software.
 In the near future it will be in every operating system and browser.</p>
 
 <p>Please read: <a href="https://witmond.nl/blog/2012/10/22/announcing-eccentric-authentication.html">Announcing Eccentric Authentication</a>.</p>

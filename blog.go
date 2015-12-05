@@ -47,7 +47,7 @@ type Comment struct {
 // global state
 var ds *Datastore
 var ecca = eccentric.Authentication{}
- 
+
 var templates = template.Must(template.ParseFiles(
 	"templates/homepage.template",
 	"templates/showBlogs.template",
@@ -57,10 +57,12 @@ var templates = template.Must(template.ParseFiles(
 	"templates/sendMessage.template",
 	"templates/readMessage.template",
 
+	//"templates/atomBlog.template",
+
 // standard templates
 	"templates/needToRegister.template",
 	"templates/menu.template",
-	"templates/tracking.template")) 
+	"templates/tracking.template"))
 
 
 func initServeMux(mux *http.ServeMux) *http.ServeMux {
@@ -74,6 +76,8 @@ func initServeMux(mux *http.ServeMux) *http.ServeMux {
 
 	mux.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
 	mux.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
+
+	// mux.HandleFunc("/atom/blogs.xml", atomBlogs)
 
 	mux.Handle("/static/", http.FileServer(http.Dir(".")))
 	return mux
@@ -89,20 +93,23 @@ func (bh *BlogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	// The things to set before running.
-	var certDir = flag.String("config", "cert", 
-		"Directory where the certificates and keys are found.") 
-	
-	var fpcaCert = flag.String("fpcaCert", "blogFPCA.cert.pem", 
+	var certDir = flag.String("config", "cert",
+		"Directory where the certificates and keys are found.")
+
+	var fpcaCert = flag.String("fpcaCert", "blogFPCA.cert.pem",
 		"File with the Certificate of the First Party Certificate Authority that we accept for our clients.")
-	
-	var fpcaURL = flag.String("fpcaURL", "https://register-blog.wtmnd.nl", 
+
+	var fpcaURL = flag.String("fpcaURL", "https://register-blog.wtmnd.nl",
 		"URL of the First Party Certificate Authority where clients can get their certificate.")
-	
-	var hostname = flag.String("hostname", "blog.wtmnd..nl", 
+
+	var hostname = flag.String("hostname", "blog.wtmnd..nl",
 		"Hostname of the application. Determines which cert.pem and key.pem are used for the TLS-connection.")
-	
-	var bindAddress = flag.String("bind", "[::]:10446", 
-		"Address and port number where to bind the listening socket.") 
+
+	var bindAddress = flag.String("bind", "[::]:10446",
+		"Address and port number where to bind the listening socket.")
+
+	var datastore = flag.String("datastore", "/var/lib/cryptoblog/data/cryptoblog.sqlite3",
+		"Directory for the cryptoblog.sqlite3 datastore")
 
 	flag.Parse()
 
@@ -114,7 +121,7 @@ func main() {
 
 	// This CA-pool specifies which client certificates can log in to our site.
 	pool := eccentric.ReadCert( *certDir + "/" + *fpcaCert) // "datingLocalCA.cert.pem"
-	ds = DatastoreOpen("cryptoblog.sqlite3")
+	ds = DatastoreOpen(*datastore)
 	log.Printf("Started at %s. Go to https://%s/ + port", *bindAddress, *hostname)
 
 	bloghandler := &BlogHandler{
@@ -131,7 +138,7 @@ func main() {
 	// Set  the server certificate to encrypt the connection with TLS
 	ssl_certificate := *certDir + "/" + *hostname + ".cert.pem"
 	ssl_cert_key   := *certDir + "/" + *hostname + ".key.pem"
-	
+
 	check(server.ListenAndServeTLS(ssl_certificate, ssl_cert_key))
 }
 
@@ -170,12 +177,13 @@ func showBlog(w http.ResponseWriter, req *http.Request) {
 		"Comments": comments}))
 }
 
+
 // createBlog lets the user creata a blog
 func createBlog(w http.ResponseWriter, req *http.Request) {
  	// LoggedInHander made sure our user is logged in with a correct certificate
  	cn := req.TLS.PeerCertificates[0].Subject.CommonName
  	switch req.Method {
- 	case "GET": 
+ 	case "GET":
  		check(templates.ExecuteTemplate(w, "createBlog.template", map[string]interface{}{
  			"CN": cn,
  		}))
@@ -192,7 +200,7 @@ func createBlog(w http.ResponseWriter, req *http.Request) {
 		ds.writeBlog(blog) // sets blog.Id
 		http.Redirect(w, req, fmt.Sprintf("/blog/%v", blog.Id), http.StatusTemporaryRedirect  )
 
- 	default: 
+ 	default:
  		http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
  	}
 }
@@ -201,8 +209,8 @@ func createBlog(w http.ResponseWriter, req *http.Request) {
 // it can be signed or unsigned
 func submitComment(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
- 	case "POST":
- 		req.ParseForm()
+	case "POST":
+		req.ParseForm()
 		// check if our user is logged in with a correct certificate
 		// otherwise, we call him "anonymous"
 		cn, _ := checkUserIsLoggedIn(req)
@@ -219,10 +227,23 @@ func submitComment(w http.ResponseWriter, req *http.Request) {
 		ds.writeComment(comment) // sets comment.Id
 		http.Redirect(w, req, fmt.Sprintf("/blog/%v#%v", blogId, comment.Id), http.StatusTemporaryRedirect)
 
- 	default: 
- 		http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
- 	}
+	default:
+                http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
+	}
 }
+
+// atomBlog shows the latest blogs opened
+// func atomBlogs(w http.ResponseWriter, req *http.Request) {
+// 	switch req.Method {
+//  	case "GET":
+// 		w.Header().Set("Content-Type", "application/xml+rss, charset=utf8")
+//  		check(templates.ExecuteTemplate(w, "atomBlog.template", map[string]interface{}{
+//  		}))
+
+//  	default:
+//  		http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
+//  	}
+// }
 
 // breaks if there is an error
 func checkUserIsLoggedIn(req *http.Request) (string, bool) {
@@ -231,6 +252,8 @@ func checkUserIsLoggedIn(req *http.Request) (string, bool) {
 	}
 	return req.TLS.PeerCertificates[0].Subject.CommonName, true
 }
+
+
 
 
 //*************** Private Messaging *****************************//
@@ -249,7 +272,7 @@ func readMessages (w http.ResponseWriter, req *http.Request) {
         // User is logged in
         cn := req.TLS.PeerCertificates[0].Subject.CommonName
         switch req.Method {
-        case "GET": 
+        case "GET":
                 // set this header to signal the user's Agent to perform data decryption.
                 w.Header().Set("Eccentric-Authentication", "decryption=\"required\"")
                 w.Header().Set("Content-Type", "text/html, charset=utf8")
@@ -258,7 +281,7 @@ func readMessages (w http.ResponseWriter, req *http.Request) {
                         "CN": cn,
                         "messages": messages,
                 }))
-                
+
         default:
                 http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
 
@@ -271,11 +294,11 @@ func readMessages (w http.ResponseWriter, req *http.Request) {
 func sendMessage(w http.ResponseWriter, req *http.Request) {
         cn := req.TLS.PeerCertificates[0].Subject.CommonName
         switch req.Method {
-        case "GET": 
+        case "GET":
                 req.ParseForm()
                 toCN := req.Form.Get("addressee")
 
-                // idURL 
+                // idURL
                 // We do provide a path to the CA to let the user retrieve the public key of the recipient.
                 // User is free to obtain in other ways... :-)
                 idURL, err := url.Parse(ecca.RegisterURL)
@@ -295,7 +318,7 @@ func sendMessage(w http.ResponseWriter, req *http.Request) {
                 req.ParseForm()
 		addressee := req.Form.Get("addressee")
 		if addressee == "anonymous" {
-			// TODO check full eccentric identity 
+			// TODO check full eccentric identity
 			// TODO Create neat error page explaining why we don't want your plaintext private message
 			w.Write([]byte(`<html><p>You can't send Private Messages to anonymous people. <b>We can't keep it secret!</b> We won't accept it.</p></html>`))
 			return
@@ -318,7 +341,7 @@ func sendMessage(w http.ResponseWriter, req *http.Request) {
 
 }
 
-	
+
 func check(err error) {
 	if err != nil {
 		panic(err)
@@ -333,5 +356,5 @@ func getFirst(s []string) string {
         if s != nil {
                 return s[1]
         }
-        return ""       
+        return ""
 }
