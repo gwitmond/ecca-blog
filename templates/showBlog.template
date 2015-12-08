@@ -16,6 +16,7 @@
 	  <ecca_validation>Here will be the output of the signature validation</ecca_validation><br />
 	</ecca_signed_message>
 	  <a class="button ecca-private-message"  href="/send-message?addressee={{ .Blog.Blogger }}">Send Private Message</a>
+	  <a class="button ecca-invitation" href="/initiate-direct-connection?addressee={{ .Blog.Blogger }}">Send invitiation to connect</a>
       </blog>
     </p>
     <h1>Comments</h1>

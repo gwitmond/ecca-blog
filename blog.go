@@ -57,6 +57,8 @@ var templates = template.Must(template.ParseFiles(
 	"templates/sendMessage.template",
 	"templates/readMessage.template",
 
+	"templates/initiateDirectConnection.template",
+
 	//"templates/atomBlog.template",
 
 // standard templates
@@ -76,6 +78,8 @@ func initServeMux(mux *http.ServeMux) *http.ServeMux {
 
 	mux.Handle("/read-messages", ecca.LoggedInHandler(readMessages, "needToRegister.template"))
 	mux.Handle("/send-message", ecca.LoggedInHandler(sendMessage, "needToRegister.template"))
+
+	mux.Handle("/initiate-direct-connection", ecca.LoggedInHandler(initiateDirectConnection, "needToRegister.template"))
 
 	// mux.HandleFunc("/atom/blogs.xml", atomBlogs)
 
@@ -122,7 +126,7 @@ func main() {
 	// This CA-pool specifies which client certificates can log in to our site.
 	pool := eccentric.ReadCert( *certDir + "/" + *fpcaCert) // "datingLocalCA.cert.pem"
 	ds = DatastoreOpen(*datastore)
-	log.Printf("Started at %s. Go to https://%s/ + port", *bindAddress, *hostname)
+	log.Printf("Started at http://%s", *bindAddress)
 
 	bloghandler := &BlogHandler{
 		mux: initServeMux(http.NewServeMux()),
@@ -292,15 +296,20 @@ func readMessages (w http.ResponseWriter, req *http.Request) {
 // Right now, that's our own dating site. It could perform a MitM.
 // See: http://eccentric-authentication.org/eccentric-authentication/private_messaging.html
 func sendMessage(w http.ResponseWriter, req *http.Request) {
-        cn := req.TLS.PeerCertificates[0].Subject.CommonName
+        fromCN := req.TLS.PeerCertificates[0].Subject.CommonName
+	req.ParseForm()
+	toCN := req.Form.Get("addressee")
+	if toCN == "" || toCN == "anonymous" {
+		// TODO check full eccentric identity
+		// TODO Create neat error page explaining why we don't want your plaintext private message
+		w.Write([]byte(`<html><p>You can't send Private Messages to anonymous people. <b>We can't keep it secret!</b> We won't accept it.</p></html>`))
+		return
+	}
         switch req.Method {
         case "GET":
-                req.ParseForm()
-                toCN := req.Form.Get("addressee")
-
                 // idURL
-                // We do provide a path to the CA to let the user retrieve the public key of the recipient.
-                // User is free to obtain in other ways... :-)
+                // We do provide a path to the CA to let the proxy retrieve the public key of the recipient.
+                // Proxy is free to obtain in other ways... :-)
                 idURL, err := url.Parse(ecca.RegisterURL)
                 check(err)
                 idURL.Path = "/get-certificate"
@@ -309,28 +318,21 @@ func sendMessage(w http.ResponseWriter, req *http.Request) {
                 idURL.RawQuery = q.Encode()
 
                 check(templates.ExecuteTemplate(w, "sendMessage.template", map[string]interface{}{
-                        "CN": cn,            // from us
-                        "ToCN": toCN,   // to recipient
-                        "IdURL": idURL, // where to find the certificate with public key
+                        "CN":    fromCN, // from us
+                        "ToCN":  toCN,   // to recipient
+                        "IdURL": idURL,  // where to find the certificate with public key
                 }))
 
         case "POST":
-                req.ParseForm()
-		addressee := req.Form.Get("addressee")
-		if addressee == "anonymous" {
-			// TODO check full eccentric identity
-			// TODO Create neat error page explaining why we don't want your plaintext private message
-			w.Write([]byte(`<html><p>You can't send Private Messages to anonymous people. <b>We can't keep it secret!</b> We won't accept it.</p></html>`))
-			return
-		}
+		// The proxy has intercepted our request and encrypted the message for us, we just delever it.
                 ciphertext := req.Form.Get("ciphertext")
                 if ciphertext == "" {
                         w.Write([]byte(`<html><p>Your message was not encrypted. We won't accept it. Please use the ecca-proxy.</p></html>`))
                         return
                 }
                 ds.writeMessage(&Message{
-                        FromCN: cn,
-                        ToCN: addressee,
+                        FromCN:     fromCN,
+                        ToCN:       toCN,
                         Ciphertext: ciphertext,
                 })
                 w.Write([]byte(`<html><p>Thank you, your message will be delivered.</p></html>`))
@@ -338,7 +340,55 @@ func sendMessage(w http.ResponseWriter, req *http.Request) {
         default:
                 http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
         }
+}
 
+
+// initiateDirectConnection, show the user how to initiate a direct connection
+// and send the invitation
+func initiateDirectConnection(w http.ResponseWriter, req *http.Request) {
+        fromCN := req.TLS.PeerCertificates[0].Subject.CommonName
+	req.ParseForm()
+	toCN := req.Form.Get("addressee")
+	if toCN == "" || toCN == "anonymous" {
+		// TODO check full eccentric identity
+		// TODO Create neat error page explaining why we don't want your plaintext private message
+		w.Write([]byte(`<html><p>You can't send Invites to anonymous people. <b>We don't know who they are.</b></p></html>`))
+		return
+	}
+	log.Printf("sendMessage method=%v, from=%v, to %v", req.Method, fromCN, toCN)
+        switch req.Method {
+        case "GET":
+		idURL, err := url.Parse(ecca.RegisterURL)
+                check(err)
+                idURL.Path = "/get-certificate"
+                q := idURL.Query()
+                q.Set("nickname", toCN)
+                idURL.RawQuery = q.Encode()
+
+                check(templates.ExecuteTemplate(w, "initiateDirectConnection.template", map[string]interface{}{
+                        "CN":    fromCN, // from us
+                        "ToCN":  toCN,   // to recipient
+                        "IdURL": idURL,  // where to find the certificate with public key
+                }))
+
+        case "POST":
+		// The proxy has intercepted this request and set up a listening endpoint.
+		// We get the invitation in <ciphertext> and need to send it to the invitee.
+                ciphertext := req.Form.Get("ciphertext")
+                if ciphertext == "" {
+                        w.Write([]byte(`<html><p>Your message was not encrypted. We won't accept it. Please use the ecca-proxy.</p></html>`))
+                        return
+                }
+                ds.writeMessage(&Message{
+                        FromCN:     fromCN,
+                        ToCN:       toCN,
+                        Ciphertext: ciphertext,
+                })
+                w.Write([]byte(`<html><p>Thank you, your invitation will be delivered.</p></html>`))
+
+        default:
+                http.Error(w, "Unexpected method", http.StatusMethodNotAllowed )
+        }
 }
 
 

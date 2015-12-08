@@ -1,0 +1,31 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+  <head>
+    <link type="text/css" rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    {{ template "menu" }}
+
+    <h1>Invite for a direct connection</h1>
+    <p>Here you can invite {{ .ToCN }} for a direct connection.</p>
+
+    <p>Here's how it works: <ul>
+      <li>Your computer creates a listening point;</li>
+      <li>It sends a message to the other side to invite them to connect to you;</li>
+      <li>Wait until the other side connects;</li>
+      <li>Of course, it's end-to-end encrypted so no one can listen on your conversation;</li>
+      <li>And it's routed via the Tor network so no one learns that you are having a conversation.<li>
+    </ul></p>
+
+    <p>Choose the type of connection: text chat or voice talk
+      <form method="POST" action="/initiate-direct-connection">
+        <input type="hidden" name="initiate-direct-connection" value="required" />
+        <input type="hidden" name="addressee" value="{{ .ToCN }}" />
+        <input type="hidden" name="certificate_url" value="{{ .IdURL }}" />
+        <select name="application"><option value="chat">chat</option><option value="voice">voice</option></select>
+        <input class="button" type="submit" value="Send Invitation" />
+      </form>
+    </p>
+  </body>
+</html>
