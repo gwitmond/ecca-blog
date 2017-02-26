@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strconv"
 	"fmt"
+	"path"
 	"github.com/gwitmond/eccentric-authentication" // package eccentric
 )
 
@@ -48,7 +49,7 @@ type Comment struct {
 var ds *Datastore
 var ecca = eccentric.Authentication{}
 
-var templates = template.Must(template.ParseFiles(
+var templatesList = []string{
 	"templates/homepage.template",
 	"templates/showBlogs.template",
 	"templates/showBlog.template",
@@ -64,10 +65,13 @@ var templates = template.Must(template.ParseFiles(
 // standard templates
 	"templates/needToRegister.template",
 	"templates/menu.template",
-	"templates/tracking.template"))
+	"templates/tracking.template"}
+
+// placeholder for precompiled templates
+var templates *template.Template
 
 
-func initServeMux(mux *http.ServeMux) *http.ServeMux {
+func initServeMux(mux *http.ServeMux, baseDir string) *http.ServeMux {
 	mux.HandleFunc("/", homePage)
 
 	mux.HandleFunc("/blogs", showBlogs) // show list of blogs
@@ -83,7 +87,7 @@ func initServeMux(mux *http.ServeMux) *http.ServeMux {
 
 	// mux.HandleFunc("/atom/blogs.xml", atomBlogs)
 
-	mux.Handle("/static/", http.FileServer(http.Dir(".")))
+	mux.Handle("/static/", http.FileServer(http.Dir(baseDir)))
 	return mux
 }
 
@@ -97,7 +101,7 @@ func (bh *BlogHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func main() {
 	// The things to set before running.
-	var certDir = flag.String("config", "cert",
+	var certDir = flag.String("certDir", "cert",
 		"Directory where the certificates and keys are found.")
 
 	var fpcaCert = flag.String("fpcaCert", "blogFPCA.cert.pem",
@@ -115,7 +119,17 @@ func main() {
 	var datastore = flag.String("datastore", "/var/lib/cryptoblog/data/cryptoblog.sqlite3",
 		"Directory for the cryptoblog.sqlite3 datastore")
 
+	var baseDir = flag.String("baseDir", ".",
+	    	"Directory where the template and static directories live, when unset, defaults to current working directory.")
+
 	flag.Parse()
+
+	// point the templates to base/../template/homedir.template
+	var temps = []string{}
+	for _, templ := range templatesList {
+	    temps = append(temps, path.Join(*baseDir, templ))
+	}
+	templates = template.Must(template.ParseFiles(temps...))
 
 	ecca = eccentric.Authentication{
 		RegisterURL:  *fpcaURL, // "https://register-cryptoblog.wtmnd.nl:10501/register-pubkey",
@@ -129,7 +143,7 @@ func main() {
 	log.Printf("Started at http://%s", *bindAddress)
 
 	bloghandler := &BlogHandler{
-		mux: initServeMux(http.NewServeMux()),
+		mux: initServeMux(http.NewServeMux(), *baseDir),
 	}
 
 	server := &http.Server{
